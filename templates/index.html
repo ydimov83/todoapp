@@ -1,0 +1,80 @@
+<html>
+    <head>
+        <title>Todo App</title>
+        <style>
+            .hidden {
+                display: none;
+            }
+            ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <form id="form">
+            <input type="text" name="description"  id="description"/>
+            <input type="submit" value="Create" />
+        </form>
+        <div id="error" class="hidden">Something went wrong y'all!</div>
+        <ul id="todos">
+            {% for d in data %}
+            <li><input class="check-completed" type="checkbox" {% if d.completed %} checked {% endif %} /> {{ d.description }}</li>
+            {% endfor %}
+        </ul>
+        <!--Adding the <script> tag below with the onsubmit override will prevent the form 
+            from using the default submit action we defined above
+        -->
+        <script>
+            const checkboxes = document.querySelectorAll('.check-completed');
+            for (let i = 0; i < checkboxes.length; i++) {
+                const checkbox = checkboxes[i];
+                checkbox.onchange = function(e) {
+                    console.log('event', e);
+                }
+            }
+            document.getElementById('form').onsubmit = function(e) {
+                e.preventDefault();
+                //Now to define the Fetch properties
+                fetch('/todos/create', {
+                    method: 'POST',
+                    //Pass in our 'description' input value to the 'description' property
+                    body: JSON.stringify({
+                        'description': document.getElementById('description').value
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                //Since Fetch is a Promise based library we need to define the then() function 
+                //to determine what to do once we get a response
+                .then(function(response) {
+                    //First parse the json response
+                    return response.json();
+                })
+                .then(function(jsonResponse) {
+                    //Then manipulate the json response
+                    console.log(jsonResponse);
+                    //Create a list item so we can append it to our table
+                    const listItem = document.createElement('LI');
+                    //Set the value of the list item to the value of the 'description' key we get back in our jsonResponse object
+                    console.log('set the innerHTML of the listItem');
+                    listItem.innerHTML = jsonResponse['description'];
+                    //Finally append the list item to our todos table, here we 
+                    console.log('appending to todos');
+                    document.getElementById('todos').appendChild(listItem);
+                    //If we get back response we want to make sure the error div is hidden
+                    console.log('about to update the className');
+                    document.getElementById('error').className = 'hidden';
+                })
+                .catch(function() {
+                    console.log('Entered the catch');
+                    //If we don't get back a successful response we can set the className of our error div to 
+                    //null so that it can now be displayed
+                    document.getElementById('error').className = '';
+                })
+            }
+        </script>
+    </body>
+</html>
