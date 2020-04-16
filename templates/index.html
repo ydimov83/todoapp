@@ -1,16 +1,7 @@
 <html>
     <head>
         <title>Todo App</title>
-        <style>
-            .hidden {
-                display: none;
-            }
-            ul {
-                list-style: none;
-                padding: 0;
-                margin: 0;
-            }
-        </style>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     </head>
     <body>
         <form id="form">
@@ -20,7 +11,7 @@
         <div id="error" class="hidden">Something went wrong y'all!</div>
         <ul id="todos">
             {% for d in data %}
-            <li><input class="check-completed" type="checkbox" {% if d.completed %} checked {% endif %} /> {{ d.description }}</li>
+            <li><input class="check-completed" data-id="{{ d.id }}" type="checkbox" {% if d.completed %} checked {% endif %} /> {{ d.description }}</li>
             {% endfor %}
         </ul>
         <!--Adding the <script> tag below with the onsubmit override will prevent the form 
@@ -32,14 +23,38 @@
                 const checkbox = checkboxes[i];
                 checkbox.onchange = function(e) {
                     console.log('event', e);
+                    const newCompleted = e.target.checked;
+                    // In the event's (e) 'target' property we can look to the 'dataset' 
+                    // property contained within and key off the 'id' key value to get the 
+                    // database ID for our object
+                    const todoId = e.target.dataset['id'];
+                    fetch('/todos/' + todoId + '/set-completed', {
+                        method: 'POST',
+                        body: JSON.stringify ({
+                            'completed': newCompleted
+                        }),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(function() {
+                        document.getElementById('error').className = 'hidden';
+                    })
+                    .catch(function() {
+                    console.log('Entered the catch for /set-completed');
+                    //If we don't get back a successful response we can set the className of our error div to 
+                    //null so that it can now be displayed
+                    document.getElementById('error').className = '';
+                })
                 }
             }
             document.getElementById('form').onsubmit = function(e) {
+                // We want to prevent the default submittion behavior
                 e.preventDefault();
-                //Now to define the Fetch properties
+                // Now to define the Fetch properties
                 fetch('/todos/create', {
                     method: 'POST',
-                    //Pass in our 'description' input value to the 'description' property
+                    // Pass in our 'description' input value to the 'description' property
                     body: JSON.stringify({
                         'description': document.getElementById('description').value
                     }),
@@ -57,10 +72,12 @@
                     //Then manipulate the json response
                     console.log(jsonResponse);
                     //Create a list item so we can append it to our table
+                    var parentElement = document.getElementById('todos');
                     const listItem = document.createElement('LI');
                     //Set the value of the list item to the value of the 'description' key we get back in our jsonResponse object
                     console.log('set the innerHTML of the listItem');
                     listItem.innerHTML = jsonResponse['description'];
+                    listItem.setAttribute("type", "checkbox");
                     //Finally append the list item to our todos table, here we 
                     console.log('appending to todos');
                     document.getElementById('todos').appendChild(listItem);
@@ -69,7 +86,7 @@
                     document.getElementById('error').className = 'hidden';
                 })
                 .catch(function() {
-                    console.log('Entered the catch');
+                    console.log('Entered the catch for /create');
                     //If we don't get back a successful response we can set the className of our error div to 
                     //null so that it can now be displayed
                     document.getElementById('error').className = '';
