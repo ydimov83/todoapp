@@ -11,7 +11,10 @@
         <div id="error" class="hidden">Something went wrong y'all!</div>
         <ul id="todos">
             {% for d in data %}
-            <li><input class="check-completed" data-id="{{ d.id }}" type="checkbox" {% if d.completed %} checked {% endif %} /> {{ d.description }}</li>
+            <li><input class="check-completed" data-id="{{ d.id }}" type="checkbox" 
+                {% if d.completed %} checked {% endif %} /> {{ d.description }}
+                <button class="todo-delete" data-id="{{ d.id }}">&cross;</button>
+            </li>
             {% endfor %}
         </ul>
         <!--Adding the <script> tag below with the onsubmit override will prevent the form 
@@ -73,14 +76,15 @@
                     console.log(jsonResponse);
                     //Create a list item so we can append it to our table
                     var parentElement = document.getElementById('todos');
-                    const listItem = document.createElement('LI');
+                    var listItem = document.createElement('LI');
+                    listItem.type = 'checkbox';
+                    listItem.setAttribute
                     //Set the value of the list item to the value of the 'description' key we get back in our jsonResponse object
                     console.log('set the innerHTML of the listItem');
                     listItem.innerHTML = jsonResponse['description'];
-                    listItem.setAttribute("type", "checkbox");
                     //Finally append the list item to our todos table, here we 
                     console.log('appending to todos');
-                    document.getElementById('todos').appendChild(listItem);
+                    parentElement.appendChild(listItem);
                     //If we get back response we want to make sure the error div is hidden
                     console.log('about to update the className');
                     document.getElementById('error').className = 'hidden';
@@ -92,6 +96,29 @@
                     document.getElementById('error').className = '';
                 })
             }
+            const deleteButtons = document.querySelectorAll(".todo-delete");
+            for (let i = 0; i < deleteButtons.length; i++) {
+                const deleteButton = deleteButtons[i];
+                deleteButton.onclick = function(e) {
+                    const todoId = e.target.dataset['id'];
+                    console.log("I clicked the X", e);
+                    console.log(todoId);
+                    fetch('/todos/' + todoId, {
+                        method: 'DELETE'
+                    })
+                    .then(function() {
+                        document.getElementById('error').className = 'hidden';
+                        const item = e.target.parentElement;
+                        item.remove();
+                    })
+                    .catch(function() {
+                    console.log('Entered the catch for /delete');
+                    //If we don't get back a successful response we can set the className of our error div to 
+                    //null so that it can now be displayed
+                    document.getElementById('error').className = '';
+                })
+            }
+        }
         </script>
     </body>
 </html>

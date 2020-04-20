@@ -20,6 +20,13 @@ class Todo(db.Model):
     def __repr__(self):
         return f'<Todo {self.id} {self.description}>'
 
+class TodoList(db.Model):
+    __tablename__ = 'todolists'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(), nullable=False)
+    todos = db.relationship('Todo', backref='list', lazy=True)
+
+
 # We call db.create_all() to create the above table, however commented out due to use of Migrations instead
 # db.create_all()
 
@@ -29,8 +36,10 @@ class Todo(db.Model):
 # to use the index.html View and the 'data' Model
 @app.route('/')
 def index():
-    return render_template('index.html', data=Todo.query.order_by('id').all()
-    )
+    if (request.method  == 'DELETE'):
+        return render_template('index.html', data=Todo.query.order_by('id').all())
+    else:
+        return render_template('index.html', data=Todo.query.order_by('id').all())
 
 @app.route('/todos/create', methods=['POST'])
 def create_todo():
@@ -73,3 +82,16 @@ def set_completed_todo(todo_id):
     finally:
         db.session.close()
     return redirect(url_for('index'))
+
+@app.route('/todos/<todo_id>', methods=['DELETE'])
+def delete_todo(todo_id):
+    try:
+        todo = Todo.query.get(todo_id)
+        db.session.delete(todo)
+        db.session.commit()
+    except:
+        print(sys.exc_info())
+        db.session.rollback()
+    finally:
+        db.session.close()
+    return jsonify({ 'success': True })
